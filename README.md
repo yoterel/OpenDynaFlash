@@ -1,6 +1,8 @@
 # OpenDynaFlash
 
-This library provides a C++ wrapper and python bindings for the official DynaFlash V3 API, which is supplied with the [DynaFlash V3 color projector](https://www.vision.ict.e.titech.ac.jp/projects/dynaflashv3/index.html) (and also in [this repository](https://github.com/yoterel/OpenDynaFlash/tree/main/official_API), for completeness).
+The [DynaFlash V3 color projector](https://www.vision.ict.e.titech.ac.jp/projects/dynaflashv3/index.html) is a high-speed DLP projector capable of almost 1K frames throughput per second, with very short latencies.
+
+This library provides a C++ wrapper and python bindings for the official DynaFlash V3 API, which is supplied by the manufacturer (and also in [this repository](https://github.com/yoterel/OpenDynaFlash/tree/main/official_API), for completeness).
 
 There are 3 reasons you should be using this library rather than calling the API functions directly.
 
