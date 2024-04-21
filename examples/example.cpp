@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     timer.start();
     project_white_blocking(projector, 1);
     timer.stop();
-    std::cout << "single frame: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
+    std::cout << "single white frame: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
 
     // now lets project 1K frames as quickly as possible. The "producer" (our app) will send frames much faster than the "consumer" (the projector) can display them
     // if left to its own devices, the projector will work in a FIFO mode, and if its internal buffer is full, it will start to drop frames.
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     timer.start();
     project_white_blocking(projector, 1000);
     timer.stop();
-    std::cout << "1000 frames: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
+    std::cout << "white frame, 1000 frames: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
 
     // lets do the same thing, but this time with our own data (the white image from before is created inside OpenDynaFlash).
     // using the show_buffer function will eventually do two types of copies internally:
@@ -112,14 +112,14 @@ int main(int argc, char *argv[])
     timer.start();
     project_data_blocking(projector, my_frame, 1000);
     timer.stop();
-    std::cout << "1000 frames: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
+    std::cout << "blocking, 1000 frames: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
 
     // what if we didn't want to block when the circular buffer is full? we can pass blocking = false to the show_buffer function.
     // this specific example below will just drop the frames when the buffer is full.
     timer.start();
     project_data_non_blocking(projector, my_frame, 1000);
     timer.stop();
-    std::cout << "1000 frames: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
+    std::cout << "non-blocking, 1000 frames: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
 
     // In some use cases, we do not want to use the safe circular buffer to project, but rather directly project the latest frame.
     // for this, we can use the show_buffer_internal function. Note it is not thread safe, so calling it from multiple threads will result in race conditions.
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
     timer.start();
     project_directly(projector, my_frame, 1000);
     timer.stop();
-
+    std::cout << "non-safe, 1000 frames: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
     // until now we have been assuming our application desires to project in FIFO mode (i.e. the order of frames is important and buffering is allowed)
     // what about LIFO mode? (i.e. our application wants to avoid buffering, or just project the latest frame as soon as possible, and drop the rest)
     // we can use a queue of size 1 to achieve this behavior
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
     projector->init();
     timer.start();
     timer.stop();
-    std::cout << "1000 frames: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
+    std::cout << "LIFO, 1000 frames: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
 
     // projectors destructor will call kill() which will gracefully close the projector and free the resources
     return 0;
