@@ -1,6 +1,6 @@
-# dynaflash
+# OpenDynaFlash
 
-This library provides a C++ wrapper and python bindings around the official DynaFlash V3 API, which is supplied with the DynaFlash v3 projector.
+This library provides a C++ wrapper and python bindings for the official DynaFlash V3 API, which is supplied with the DynaFlash v3 projector.
 
 There are 3 reasons you should be using this library rather than calling the API functions directly.
 
