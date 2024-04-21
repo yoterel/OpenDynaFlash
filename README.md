@@ -12,14 +12,14 @@ There are 3 reasons you should be using this library rather than calling the API
 ## In a C++ Project
 To use in your own project, you will need to do the following things:
 
-- Add to the source file [OpenDynaFlash.cpp](https://github.com/yoterel/OpenDynaFlash/blob/main/src/OpenDynaFlash.cpp).
-- Include all the files under the [include](https://github.com/yoterel/OpenDynaFlash/tree/main/include) folder.
+- Add the source file [OpenDynaFlash.cpp](https://github.com/yoterel/OpenDynaFlash/blob/main/src/OpenDynaFlash.cpp) to your project.
+- Include all the files under the [include](https://github.com/yoterel/OpenDynaFlash/tree/main/include) folder in your project.
 
 - Include & link the Official API in your project (mandatory even if you don't use OpenDynaFlash)
   - Include [DynaFlash.h](https://github.com/yoterel/OpenDynaFlash/blob/main/official_API/include/DynaFlash.h).
   - Link the [official dll](https://github.com/yoterel/OpenDynaFlash/blob/main/official_API/lib/DynaFlash200.dll) to your project.
 
-If you use CMAKE, you can follow what is done to compile [example.cpp](https://github.com/yoterel/OpenDynaFlash/blob/main/examples/example.cpp) (Notice the CMAKE target "example").
+If you use CMAKE, you can follow what is done to compile [example.cpp](https://github.com/yoterel/OpenDynaFlash/blob/main/examples/example.cpp) (notice the CMAKE target "example").
 
 
 ## In Python
