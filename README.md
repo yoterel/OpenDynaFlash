@@ -23,13 +23,10 @@ If you use CMAKE, you can follow what is done to compile [example.cpp](https://g
 
 
 ## In Python
-todo
+An official pip package is being prepared. In the meantime, if you manage to compile the CMAKE target OpenDynaFlash (requires VS2019 or above, Python 3.9 or above), then the python library will be automatically created. Note you will need to place the [official dll](https://github.com/yoterel/OpenDynaFlash/blob/main/official_API/lib/DynaFlash200.dll) in the same location to actually use it.
 
 # Usage
-## In a C++ Project
-
-## In Python
-todo
+See example.cpp or example.py for typical usecases.
 
 # Contribution
 You are free to open bug reports and feature requests in the Issues section, and to contribute and improve this library.
