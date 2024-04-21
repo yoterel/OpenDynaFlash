@@ -1,6 +1,7 @@
 #include "OpenDynaFlash.h"
 #include <iostream>
 
+// initialize the projector
 bool DynaFlashProjector::init()
 {
 	if (m_initialized)
@@ -68,9 +69,9 @@ bool DynaFlashProjector::init()
 		return false;
 	}
 
-	print_led_values();
-	// set_led_values();
-	// print_led_values();
+	print_brightness_values();
+	// set_brightness_values();
+	// print_brightness_values();
 
 	/* Get frame buffer for projection */
 	if (pDynaFlash->AllocFrameBuffer(m_alloc_frame_buffer) != STATUS_SUCCESSFUL)
@@ -90,25 +91,27 @@ bool DynaFlashProjector::init()
 	}
 	m_close_signal = false;
 	m_projector_thread = std::thread([this]() { //, &projector
-		std::cout << "Consumer started" << std::endl;
-		uint8_t *image;
+		if (this->m_verbose)
+			std::cout << "Consumer started" << std::endl;
+		uint8_t *frame;
 		bool sucess;
 		while (!this->m_close_signal)
 		{
-			sucess = m_projector_queue.wait_dequeue_timed(image, std::chrono::milliseconds(100));
+			sucess = m_projector_queue.wait_dequeue_timed(frame, std::chrono::milliseconds(100));
 			if (sucess)
 			{
-				// std::cout << "Consumer got image" << std::endl;
-				this->show_buffer_internal(image);
+				this->show_buffer_internal(frame);
 			}
 		}
-		std::cout << "Consumer finished" << std::endl;
+		if (this->m_verbose)
+			std::cout << "Consumer finished" << std::endl;
 	});
 	m_initialized = true;
 	return true;
 }
 
-void DynaFlashProjector::print_led_values()
+// print out the current brightness values per channel
+void DynaFlashProjector::print_brightness_values()
 {
 	unsigned long nDaValue[4];
 	pDynaFlash->ReadDACRegister(0x00, &nDaValue[0]);
@@ -131,7 +134,8 @@ void DynaFlashProjector::print_led_values()
 		std::cout << "blue LED current: " << current << std::endl;
 }
 
-void DynaFlashProjector::set_led_values()
+// experimental function to set the brightness values
+void DynaFlashProjector::set_brightness_values()
 {
 	double green_current = 0.1f;
 	double Vadj = (10 * 0.075 * green_current);
@@ -153,16 +157,16 @@ void DynaFlashProjector::set_led_values()
 	pDynaFlash->WriteDACRegister(0x08, write_value);
 }
 
+// gracefully close the projector
 void DynaFlashProjector::gracefully_close()
 {
 	if (m_initialized)
 	{
+		// shut down our internal thread, to avoid submitting more frames
 		m_close_signal = true;
 		m_projector_thread.join();
-		/* first set flag and sleep (let other threads finish) */
-		// todo protect shared projector buffer with mutex instead
 		m_initialized = false;
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
 		/* stop projection */
 		pDynaFlash->Stop();
 
@@ -182,6 +186,7 @@ void DynaFlashProjector::gracefully_close()
 	}
 }
 
+// print out the version of the driver, HW, and DLL
 void DynaFlashProjector::print_version()
 {
 	char DriverVersion[40];
@@ -204,42 +209,83 @@ void DynaFlashProjector::print_version()
 	}
 }
 
+// will project a white frame, can block if circular buffer is full.
 void DynaFlashProjector::show()
 {
-	std::vector<uint8_t> v(m_frame_size, 255);
-	show_buffer(v.data());
+	show_buffer(m_white_frame.data());
 }
 
-void DynaFlashProjector::show_buffer(uint8_t *buffer)
+// will project an arbitrary buffer
+bool DynaFlashProjector::show_buffer(uint8_t *buffer, bool blocking)
 {
-	m_projector_queue.try_enqueue(buffer);
+	if (blocking)
+	{
+		m_projector_queue.wait_enqueue(buffer);
+		return true;
+	}
+	else
+	{
+		return m_projector_queue.try_enqueue(buffer);
+	}
 }
 
-uint8_t *DynaFlashProjector::get_buffer()
+// returns a pointer the the DynaFlash internal buffer. DO NOT RELEASE THIS MEMORY.
+// not thread safe function
+uint8_t *DynaFlashProjector::get_internal_buffer()
 {
 	uint8_t *pBuf_orig = nullptr;
-	char *pBuf_casted = static_cast<char *>(static_cast<void *>(pBuf_orig));
-	if (pDynaFlash->GetFrameBuffer(&pBuf_casted, &m_nGetFrameCnt) != STATUS_SUCCESSFUL)
+	if (m_initialized)
 	{
-		if (m_verbose)
-			std::cout << "GetFrameBuffer Error\n";
-		gracefully_close();
+		char *pBuf_casted = static_cast<char *>(static_cast<void *>(pBuf_orig));
+		if (pDynaFlash->GetFrameBuffer(&pBuf_casted, &m_nGetFrameCnt) != STATUS_SUCCESSFUL)
+		{
+			if (m_verbose)
+				std::cout << "GetFrameBuffer Error\n";
+			gracefully_close();
+		}
+		if (m_nGetFrameCnt == 0)
+		{
+			if (m_verbose)
+				std::cout << "GetFrameBuffer Error: m_nGetFrameCnt == 0\n";
+			gracefully_close();
+		}
 	}
 	return pBuf_orig;
 }
 
-void DynaFlashProjector::show_buffer_internal(uint8_t *buffer)
+// will signal the projector to show the frame in the internal buffer
+// assumes the buffer is filled prior to calling this function (use get_internal_buffer)
+void DynaFlashProjector::post_internal_buffer()
 {
 	if (m_initialized)
 	{
+		if (pDynaFlash->PostFrameBuffer(1) != STATUS_SUCCESSFUL)
+		{
+			if (m_verbose)
+				std::cout << "PostFrameBuffer Error\n";
+			gracefully_close();
+		}
+	}
+}
+
+// will attempt to project an arbitrary buffer as fast as possible.
+// if the internal buffer is full, frame will be dropped.
+// not thread safe function
+void DynaFlashProjector::show_buffer_internal(uint8_t *buffer)
+{
+	// NOTE: does not free the buffer memory
+	if (m_initialized)
+	{
+		// check if frame drop is occuring
 		pDynaFlash->GetStatus(&m_DynaFlashStatus);
 		int dropped = m_DynaFlashStatus.InputFrames - m_DynaFlashStatus.OutputFrames;
-		if (dropped > 100)
+		if (dropped > 0)
 		{
 			if (m_verbose)
 				std::cout << "warning, frame drop is occuring (dropped: " << dropped << " so far)" << std::endl;
 			return; // todo: without this, huge latency in projection. investigate why
 		}
+		// get pointer to the internal buffer (this location is dynamic and dictated by the driver every function call)
 		if (pDynaFlash->GetFrameBuffer(&pBuf, &m_nGetFrameCnt) != STATUS_SUCCESSFUL)
 		{
 			if (m_verbose)
@@ -248,8 +294,9 @@ void DynaFlashProjector::show_buffer_internal(uint8_t *buffer)
 		}
 		if ((pBuf != NULL) && (m_nGetFrameCnt != 0))
 		{
-			// std::cout << "frame count: " << nGetFrameCnt << std::endl;
+			// copy the frame to the internal buffer
 			memcpy(pBuf, buffer, m_frame_size);
+			// signal the projector to show the frame
 			if (pDynaFlash->PostFrameBuffer(1) != STATUS_SUCCESSFUL)
 			{
 				if (m_verbose)
@@ -257,6 +304,5 @@ void DynaFlashProjector::show_buffer_internal(uint8_t *buffer)
 				gracefully_close();
 			}
 		}
-		// free((void *)pFrameData);
 	}
 }
