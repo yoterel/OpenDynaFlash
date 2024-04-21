@@ -115,13 +115,13 @@ int main(int argc, char *argv[])
     std::cout << "1000 frames: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
 
     // what if we didn't want to block when the circular buffer is full? we can pass blocking = false to the show_buffer function.
-    // this specific function will just drop the frames when the buffer is full.
+    // this specific example below will just drop the frames when the buffer is full.
     timer.start();
     project_data_non_blocking(projector, my_frame, 1000);
     timer.stop();
     std::cout << "1000 frames: " << timer.getElapsedTimeInMilliSec() << " ms" << std::endl;
 
-    // In some use cases, we do not want to use the threaded circular buffer to project, but rather directly project the latest frame.
+    // In some use cases, we do not want to use the safe circular buffer to project, but rather directly project the latest frame.
     // for this, we can use the show_buffer_internal function. Note it is not thread safe, so calling it from multiple threads will result in race conditions.
     // but for a single producer, this is ok to use. As explained above the projector might drop frames internally.
     timer.start();
