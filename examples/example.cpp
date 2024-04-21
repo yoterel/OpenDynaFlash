@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
     // the first is to copy the passed pointer to the buffer (i.e the address) to the circular buffer which is extremely fast.
     // the second copy happens when the projector thread dequeues this pointer: it will immediatly request the internal buffer from the projector and copy the data to it.
     // note 1: remember there is a big difference in copy speed if this data is located on the stack or on the heap.
-    // note 2: this function does not release the buffer. This is on us since we are the allocators.
+    // note 2: the show_buffer function does not release the buffer. This is on us since we are the allocators.
     timer.start();
     project_data_blocking(projector, my_frame, 1000);
     timer.stop();
